@@ -31,10 +31,10 @@ PubSubClient client(mqtt_broker, mqtt_port, net);
 NewPing sensor(PinTrig, PinEcho, 200);
 
 // Declaraciones
-float distancia, litros;
+float distancia, litros,capacidad_total, espacio_vacio, porcentaje_agua;
 unsigned long uptime;
 int duracion;
-char payload[100];
+char payload[110];
 
 void setup()
 {
@@ -71,19 +71,24 @@ void loop()
 
   // calculo los litros aprox
   // Calculo la capacidad total del tanque con las medidas iniciales en cm del tanque.
-  float capacidad_total = M_PI * tanque_radio * tanque_radio * tanque_altura;
+  capacidad_total = M_PI * tanque_radio * tanque_radio * tanque_altura;
+  
   // Calculo el espacio vacío medido por el sensor usando las medidas iniciales en cm del tanque y 
   // la distancia en cm calculada con el sensor.
-  float espacio_vacio =  M_PI * tanque_radio * tanque_radio * distancia;
+  espacio_vacio =  M_PI * tanque_radio * tanque_radio * distancia;
+  
   // La resta de la capacidad total y el espacio vacío da en cm3 la cantidad de agua que tiene el tanque, 
   // para pasar de cm3 a litros multiplico por 0.001 o divido por 1000, es lo mismo.
   litros = (capacidad_total - espacio_vacio) * 0.001;
+
+  // porcentaje de agua en el tanque
+  porcentaje_agua =  (capacidad_total - espacio_vacio) * 100 / capacidad_total;
   
   //uptime
   uptime = (millis() / 60000);
 
   // armo un mensaje json con todos los datos
-  sprintf(payload, "{\"uptime\":%u,\"distancia\":%g,\"litros\":%g,\"intervalo_actualizacion\":%i}", uptime, distancia, litros, LOOP_TIME);
+  sprintf(payload, "{\"uptime\":%u,\"distancia\":%g,\"litros\":%g,\"intervalo_actualizacion\":%i,\"porcentaje\":%g}", uptime, distancia, litros, LOOP_TIME, porcentaje_agua);
 
   // muestro en el monitor
   Serial.print(payload);
