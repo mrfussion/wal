@@ -17,18 +17,19 @@ char mqtt_client[] = "wal";
 char mqtt_user[] = "wal";
 char mqtt_pwd[] = "wal2021";
 
-// Wifi
+// Medidas del tanque expresada en metros
+float tanque_diametro = 1;
+float tanque_altura = 1.5;
+
+// inicializo objetos
 WiFiClient net;
-
-// MQTT
 PubSubClient client(mqtt_broker, mqtt_port, net);
-
-// Sensor ultrasonico
 NewPing sensor(PinTrig, PinEcho, 200);
 
 // Declaraciones
 float distancia, litros;
-unsigned long duracion, uptime;
+unsigned long uptime;
+int duracion;
 char payload[100];
 
 void setup()
@@ -50,11 +51,7 @@ void setup()
   } else {
     Serial.println("conectado! :)");
   }
-  
-  // Pines
-  //pinMode(PinTrig, OUTPUT);
-  //pinMode(PinEcho, INPUT);
-
+ 
   // Arduino OTA
   InitOTA("wal-OTA");
 }
@@ -66,15 +63,12 @@ void loop()
 
   
   // mido la distancia (se puede mas prolijo
-  int duracion = sensor.ping_median();
-  //iniciarTrigger();
-  //duracion = pulseIn(PinEcho, HIGH);
-  //distancia = duracion * 0.034 /2;
+  duracion = sensor.ping_median();
   distancia = duracion / US_ROUNDTRIP_CM;
 
   // calculo los litros aprox
   // desarrollar
-  litros = 10;
+  litros = (M_PI * (tanque_diametro / 2) * (tanque_diametro /2) * (tanque_altura - (distancia / 100))) * 1000;
 
   //uptime
   uptime = (millis() / 60000);
@@ -91,15 +85,4 @@ void loop()
     Serial.println("MQTT publicado");
   }
   delay(10 * 1000);
-}
-
-void iniciarTrigger()
-{
-  digitalWrite(PinTrig, LOW);
-  delayMicroseconds(2);
-
-  digitalWrite(PinTrig, HIGH);
-  delayMicroseconds(10);
-
-  digitalWrite(PinTrig, LOW);
 }
