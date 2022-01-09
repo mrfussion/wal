@@ -6,6 +6,9 @@
 #include <PubSubClient.h>
 #include "OTA.h"
 
+// Dispositivo
+#define DISP "wal01"
+
 // Tiempo de actualizacion en segundos
 #define LOOP_TIME 60
 
@@ -16,7 +19,7 @@ const int PinEcho = 4;
 // Mqtt
 char mqtt_broker[] = "broker.emqx.io";
 int mqtt_port = 1883;
-char mqtt_client[] = "wal";
+char mqtt_client[] = DISP;
 char mqtt_user[] = "";
 char mqtt_pwd[] = "";
 
@@ -49,16 +52,17 @@ void setup()
   // descomentar, subir, volver a comentar y subir
   //wm.resetSettings();
   bool res;
-  res = wm.autoConnect("wal");
+  res = wm.autoConnect(DISP);
   if(!res) {
     Serial.println("Fallo la conexion");
     ESP.restart();
   } else {
-    Serial.println("conectado! :)");
+    Serial.print(DISP);
+    Serial.println(" conectado");
   }
  
   // Arduino OTA
-  InitOTA("wal-OTA");
+  InitOTA(DISP);
 }
 
 void loop()
@@ -70,7 +74,7 @@ void loop()
   if (currentMillis - previousMillis >= (LOOP_TIME * 1000) || previousMillis == 0)
   {
     // despierto el dispositivo
-    Serial.println("Despierta");
+    Serial.print("[up] ");
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
     // espero porque espero, por las dudas
     delay(1000);
@@ -105,10 +109,10 @@ void loop()
 
     // publico en el broker
     if (client.connect(mqtt_client, mqtt_user, mqtt_pwd)) {
-      client.publish("wal", payload);
-      Serial.println(" *");
+      client.publish(DISP, payload);
+      Serial.print(" [mqtt push ok]");
     } else {
-      Serial.println(" [mqtt push error]");
+      Serial.print(" [mqtt push error]");
     }
 
     // guardo el valor de tiempo
@@ -116,7 +120,7 @@ void loop()
 
     // Duermo el dispositivo
     // WIFI_LIGHT_SLEEP WIFI_MODEM_SLEEP
-    Serial.println("Duerme");
+    Serial.println(" [sleep]");
     WiFi.setSleepMode(WIFI_LIGHT_SLEEP);
   }
 }
