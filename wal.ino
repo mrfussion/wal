@@ -12,6 +12,9 @@
 // Tiempo de actualizacion en segundos
 #define LOOP_TIME 60
 
+// Reset por timeout (expresado en horas)
+#define TIMEOUT 24
+
 // Pines
 const int PinTrig = 5;
 const int PinEcho = 4;
@@ -69,6 +72,12 @@ void loop()
 {
   // Arduino OTA
   ArduinoOTA.handle();
+
+  // reset por timeout
+  if (millis() >= (TIMEOUT * 3.6e+6))
+  {
+    ESP.reset();
+  }
 
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= (LOOP_TIME * 1000) || previousMillis == 0)
