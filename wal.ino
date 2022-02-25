@@ -1,4 +1,5 @@
 /* mgs 22-12-21 */
+#include "DHT.h"
 #include <NewPing.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
@@ -15,9 +16,13 @@
 // Reset por timeout (expresado en horas)
 #define TIMEOUT 24
 
+// DHT
+#define DHT_GPIO 2 // pin D4
+#define DHTTYPE DHT11
+
 // Pines
-const int PinTrig = 5;
-const int PinEcho = 4;
+const int PinTrig = 5; // pin D1
+const int PinEcho = 4; // pin D2
 
 // Mqtt
 char mqtt_broker[] = "broker.emqx.io";
@@ -25,6 +30,9 @@ int mqtt_port = 1883;
 char mqtt_client[] = DISP;
 char mqtt_user[] = "";
 char mqtt_pwd[] = "";
+
+// DHT
+DHT dht(DHT_GPIO, DHTTYPE);
 
 // Medidas del tanque expresada en centimetros (cm)
 float tanque_diametro = 111;
@@ -41,7 +49,8 @@ float distancia, litros,capacidad_total, espacio_vacio, porcentaje_agua;
 unsigned long uptime;
 unsigned long previousMillis = 0;
 int duracion;
-char payload[110];
+char payload[180];
+char tempr[100];
 
 void setup()
 {
@@ -63,6 +72,9 @@ void setup()
     Serial.print(DISP);
     Serial.println(" conectado");
   }
+
+  // DHT sensor
+  dht.begin();
  
   // Arduino OTA
   InitOTA(DISP);
@@ -110,8 +122,25 @@ void loop()
     //uptime
     uptime = (millis() / 60000);
 
+    // DHT
+    
+    // mido humedad y temeperatura
+    float humedad = dht.readHumidity();
+    float temperatura = dht.readTemperature();
+  
+    // La misma libreria me da la sensacion termica en celcius (isFahreheit = false)
+    float sensacion_termica = dht.computeHeatIndex(temperatura, humedad, false);
+
+    // Chequeo que devuelva una lectura valida
+    if (isnan(humedad) || isnan(temperatura) || isnan(sensacion_termica)) {
+      humedad = 1;
+      temperatura = 1;
+      sensacion_termica = 1;
+    }
+    
+   //"\"temp\":%.2f,\"hum\":%.2f,\"sen_ter\":%.2f",temperatura, humedad, sensacion_termica
     // armo un mensaje json con todos los datos
-    sprintf(payload, "{\"uptime\":%u,\"distancia\":%g,\"litros\":%g,\"intervalo_actualizacion\":%i,\"porcentaje\":%g}", uptime, distancia, litros, LOOP_TIME, porcentaje_agua);
+    sprintf(payload, "{\"uptime\":%u,\"distancia\":%g,\"litros\":%g,\"intervalo_actualizacion\":%i,\"porcentaje\":%g, \"temp\":%.2f,\"hum\":%.2f,\"sen_ter\":%.2f}", uptime, distancia, litros, LOOP_TIME, porcentaje_agua, temperatura, humedad, sensacion_termica);
 
     // muestro en el monitor
     Serial.print(payload);
